@@ -1,7 +1,7 @@
 {
     "name":  "@xmmtr/dsh-file-menu",
-    "version":  "0.1.8",
-    "description":  "DSH Web plugin: right-click menu on file references in the transcript — copy absolute path, reveal in Explorer, open with any registered app.",
+    "version":  "0.1.9",
+    "description":  "Better Right-Click — right-click menu on file references in the DSH transcript: copy the absolute path, reveal the file in Explorer, or open it with any app registered for that file type. Bilingual (follows the DSH locale).",
     "license":  "MIT",
     "publishConfig":  {
                           "access":  "public"
@@ -24,13 +24,14 @@
                   "LICENSE"
               ],
     "keywords":  [
-                     "dsh",
                      "dsh-plugin",
+                     "dsh",
+                     "deepseek-harness",
+                     "file-menu",
                      "context-menu",
-                     "explorer",
-                     "reveal-in-folder",
                      "open-with",
-                     "file-menu"
+                     "explorer",
+                     "better-right-click"
                  ],
     "engines":  {
                     "node":  "\u003e=20.18.1",
