@@ -1,4 +1,4 @@
-# Better Right-Click（@xmmtr/dsh-file-menu）
+# Better Right-Click（`dsh-better-right-click`）
 
 [English](#english) | [简体中文](#简体中文)
 
@@ -24,17 +24,17 @@ DSH（DeepSeek Harness）Web 会话正文里，对**文件引用**点右键，�
 
 ```powershell
 # 从 npm 安装（推荐）
-& 'D:\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd' plugin --profile <profile> add @xmmtr/dsh-file-menu
+& 'D:\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd' plugin --profile <profile> add dsh-better-right-click
 
 # 或从本地 tgz 安装
-& 'D:\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd' plugin --profile <profile> add "C:\path\to\dsh-file-menu-0.1.2.tgz"
+& 'D:\DeepSeek Harness\resources\runtime\cli\bin\dsh.cmd' plugin --profile <profile> add "C:\path\to\dsh-better-right-click-0.2.0.tgz"
 
-# 或在 DSH Web「插件」页里粘贴 @xmmtr/dsh-file-menu
+# 或在 DSH Web「插件」页里粘贴 dsh-better-right-click
 ```
 
 也可以在 DSH Web 的「插件」页里搜索 / 粘贴 git、tarball 或本地目录说明安装。
 
-卸载：`dsh plugin --profile <profile> remove @xmmtr/dsh-file-menu` → 重启；`file-menu` 那一行随包一起撤掉。
+卸载：`dsh plugin --profile <profile> remove dsh-better-right-click` → 重启；`file-menu` 那一行随包一起撤掉。
 
 ## 截图
 
@@ -42,11 +42,11 @@ DSH（DeepSeek Harness）Web 会话正文里，对**文件引用**点右键，�
 
 右键正文里的文件引用（浅色主题，独立测试 profile `filemenu-test`；图为 0.1.0 的三项菜单，0.1.6 起下方还多出「用 X 打开」分组）：
 
-![右键文件引用弹出的菜单](https://raw.githubusercontent.com/xmmtr/dsh-file-menu/main/docs/01-menu-open.png)
+![右键文件引用弹出的菜单](https://raw.githubusercontent.com/xmmtr/dsh-better-right-click/main/docs/01-menu-open.png)
 
 三类节点（Markdown 链接 / `data-file-path` 文件卡片 / `@文件` 引用）都会命中：
 
-![文件卡片与 @ 引用](https://raw.githubusercontent.com/xmmtr/dsh-file-menu/main/docs/03-card-mention.png)
+![文件卡片与 @ 引用](https://raw.githubusercontent.com/xmmtr/dsh-better-right-click/main/docs/03-card-mention.png)
 
 ## 已验证
 
@@ -59,6 +59,7 @@ DSH（DeepSeek Harness）Web 会话正文里，对**文件引用**点右键，�
 - 0.1.6：右键菜单列出本机注册的所有能打开该扩展名的程序（默认 ProgID / OpenWithProgids / OpenWithList 按 MRUList 排序），失效项自动跳过，点谁用谁打开；宿主新增 `POST /file-menu/handlers` 与 `POST /file-menu/open-with`（只接受枚举结果里的 exe）。
 - 0.1.3：直接拼 base 找不到时，在工作区里按路径后缀做有界搜索（跳过 node_modules/.git/隐藏目录，20k 条目、12 层上限、10s 缓存），同名多个时取**最近修改**的那个；404 回包带 `attempted` 与 `base`，客户端提示里直接显示尝试过的绝对路径；新增 `GET /file-menu/last` 供自查最近 20 次请求。
 - 0.1.9：菜单与提示文案跟随 DSH 界面语言（`ctx.locale` → `<html lang>` → `navigator.language`），中文/英文自动切换，未识别语言回退英文。
+- 0.2.0：改名 **Better Right-Click**，npm 包名/仓库/客户端模块 id 全部改为 `dsh-better-right-click`（旧名 `@xmmtr/dsh-file-menu` 已弃用，功能相同）。
 - 错误路径：缺文件 → `404 {"ok":false,"error":"not-found"}`；`Content-Type` 非 JSON → `415`；外部 Origin → `403`；`GET /file-menu/reveal` → `405`。
 - 客户端（Edge headless + CDP，真实页面、真实 bundle）：菜单三项文案正确、复制得到 `C:\Users\86137\Desktop\workme\AGENTS.md`、`Esc`/点击外部关闭、正文空白与输入框不拦截。
 - 卸载：`pnpm remove` + patch 还原 → 路由 404、`__DSH_BOOT__.entries` 从 70 降回 69、GUI 正常启动。

@@ -1,6 +1,6 @@
 {
-    "name":  "@xmmtr/dsh-file-menu",
-    "version":  "0.1.9",
+    "name":  "dsh-better-right-click",
+    "version":  "0.2.0",
     "description":  "Better Right-Click — right-click menu on file references in the DSH transcript: copy the absolute path, reveal the file in Explorer, or open it with any app registered for that file type. Bilingual (follows the DSH locale).",
     "license":  "MIT",
     "publishConfig":  {
@@ -51,10 +51,10 @@
             },
     "repository":  {
                        "type":  "git",
-                       "url":  "git+https://github.com/xmmtr/dsh-file-menu.git"
+                       "url":  "git+https://github.com/xmmtr/dsh-better-right-click.git"
                    },
-    "homepage":  "https://github.com/xmmtr/dsh-file-menu#readme",
+    "homepage":  "https://github.com/xmmtr/dsh-better-right-click#readme",
     "bugs":  {
-                 "url":  "https://github.com/xmmtr/dsh-file-menu/issues"
+                 "url":  "https://github.com/xmmtr/dsh-better-right-click/issues"
              }
 }
