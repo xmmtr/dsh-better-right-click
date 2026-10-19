@@ -1,0 +1,7 @@
+# @xmmtr/dsh-file-menu 的组合包 patch：声明插件行，卸载时由 DSH 自动撤掉。
+# id 固定为 file-menu；name 必须等于 npm 包名。
+# 客户端半端（lib/client.js）由 DSH 扫描到 package.json 的 dsh.client 声明后自动下发。
+- insert:
+    - id: file-menu
+      name: "@xmmtr/dsh-file-menu"
+      config: {}
