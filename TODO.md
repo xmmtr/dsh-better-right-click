@@ -81,6 +81,6 @@
 - 「其他程序…」不自己扫开始菜单：走系统 `OpenAs_RunDLL`，选完 Windows 会把应用写进 `OpenWithList`，下次自然出现在我们的列表里——比自建扫描更准也更省。
 - pins 以扩展名为键，同一扩展名全用户共用一个应用；跨类型共享（如 md/txt 同组）未做，等有人要再说。
 
-## T-13 拖拽排序（未做）
+## T-13 拖拽排序
 
-0.6.0 用 ↑ / ↓ 按钮排序。若要做鼠标拖拽，需要 pointerdown/move/up 自己实现视觉拖影（HTML5 draggable 在 Electron 里可用，但和右键菜单的点击判定容易打架）。
+0.6.1 已用 HTML5 draggable + dragover/drop 实现行拖动，插入位置用 box-shadow 画上下蓝线。已知限制：触屏设备（平板/手机远程访问）没有原生 draggable，需要触摸事件兜底。

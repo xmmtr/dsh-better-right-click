@@ -11,20 +11,53 @@
 # Handlers whose exe is missing are still reported with available=false, so the UI can
 # show "invalid" instead of silently doing nothing.
 # Output: one compact JSON document on stdout. Never throws.
+#
+# Perf note: 0.6.3 -- the previous version used Get-ItemProperty on three candidate
+# roots per ProgID. A *missing* key under the merged HKCR view costs ~67 ms each, so a
+# typical .pdf lookup took ~11 s and the host timed out. Registry::ClassesRoot already
+# merges HKCU\Software\Classes + HKLM\Software\Classes, so the fallbacks were both
+# redundant and slow; we now read through the .NET registry API, where misses are cheap.
 $ErrorActionPreference = 'SilentlyContinue'
 # 宿主用 UTF-8 读 stdout；PowerShell 5.1 默认按控制台代码页输出，中文会变乱码。
 [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding($false)
+
 $ext = $Extension.Trim().ToLower()
+if (-not $ext.StartsWith('.')) { $ext = '.' + $ext }
 $seen = @{}
 $list = New-Object System.Collections.ArrayList
 
-function Get-Command-Of {
+$HKCR = [Microsoft.Win32.Registry]::ClassesRoot
+$HKCU = [Microsoft.Win32.Registry]::CurrentUser
+$HKLM = [Microsoft.Win32.Registry]::LocalMachine
+
+function Get-DefaultValue {
+  param($Hive, [string]$SubKey)
+  if ([string]::IsNullOrWhiteSpace($SubKey)) { return $null }
+  try {
+    $key = $Hive.OpenSubKey($SubKey)
+    if ($null -eq $key) { return $null }
+    try {
+      $value = $key.GetValue('')
+      if ($null -eq $value) { return $null }
+      $text = [string]$value
+      if ($text.Trim() -eq '') { return $null }
+      return $text
+    } finally { $key.Close() }
+  } catch { return $null }
+}
+
+function Get-ValueNames {
+  param($Hive, [string]$SubKey)
+  try {
+    $key = $Hive.OpenSubKey($SubKey)
+    if ($null -eq $key) { return @() }
+    try { return @($key.GetValueNames()) } finally { $key.Close() }
+  } catch { return @() }
+}
+
+function Get-CommandOf {
   param([string]$ProgId)
-  foreach ($root in @('Registry::HKEY_CLASSES_ROOT', 'HKCU:\SOFTWARE\Classes', 'HKLM:\SOFTWARE\Classes')) {
-    $value = (Get-ItemProperty -Path "$root\$ProgId\shell\open\command" -ErrorAction SilentlyContinue).'(default)'
-    if ($null -ne $value -and ([string]$value).Trim() -ne '') { return [string]$value }
-  }
-  return $null
+  return Get-DefaultValue $HKCR "$ProgId\shell\open\command"
 }
 
 function Split-Command {
@@ -50,9 +83,9 @@ function Split-Command {
 }
 
 function Add-Handler {
-  param([string]$Command, [string]$Source, [string]$ProgId, [string]$FallbackName)
-  $parts = $null
-  if ($null -ne $Command -and $Command.Trim() -ne '') { $parts = Split-Command $Command }
+  param([string]$Command, [string]$Source, [string]$ProgId)
+  if ([string]::IsNullOrWhiteSpace($Command)) { return }
+  $parts = Split-Command $Command
   if ($null -eq $parts) { return }
   if ([string]::IsNullOrWhiteSpace($parts.exe)) { return }
   $key = ([System.IO.Path]::GetFileName($parts.exe)).ToLower()
@@ -81,63 +114,57 @@ function Add-Handler {
 }
 
 # 1) effective default
-$defaultProgId = (Get-ItemProperty -Path "Registry::HKEY_CLASSES_ROOT\$ext" -ErrorAction SilentlyContinue).'(default)'
-if ($defaultProgId) {
-  Add-Handler -Command (Get-Command-Of $defaultProgId) -Source 'default' -ProgId $defaultProgId
-}
+$defaultProgId = Get-DefaultValue $HKCR $ext
+if ($defaultProgId) { Add-Handler (Get-CommandOf $defaultProgId) 'default' $defaultProgId }
 
 # 2) per-user OpenWithProgids
-$userProgKey = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FileExts\$ext\OpenWithProgids"
-if (Test-Path $userProgKey) {
-  foreach ($p in (Get-ItemProperty -Path $userProgKey).PSObject.Properties) {
-    if ($p.Name -like 'PS*') { continue }
-    Add-Handler -Command (Get-Command-Of $p.Name) -Source 'user-progid' -ProgId $p.Name
-  }
+foreach ($progId in (Get-ValueNames $HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FileExts\$ext\OpenWithProgids")) {
+  if ($progId.Trim() -eq '') { continue }
+  Add-Handler (Get-CommandOf $progId) 'user-progid' $progId
 }
 
 # 3) machine OpenWithProgids
-$machineProgKey = "Registry::HKEY_CLASSES_ROOT\$ext\OpenWithProgids"
-if (Test-Path $machineProgKey) {
-  foreach ($p in (Get-ItemProperty -Path $machineProgKey).PSObject.Properties) {
-    if ($p.Name -like 'PS*') { continue }
-    Add-Handler -Command (Get-Command-Of $p.Name) -Source 'progid' -ProgId $p.Name
-  }
+foreach ($progId in (Get-ValueNames $HKCR "$ext\OpenWithProgids")) {
+  if ($progId.Trim() -eq '') { continue }
+  Add-Handler (Get-CommandOf $progId) 'progid' $progId
 }
 
 # 4) recent OpenWithList, MRUList order first
-$listKey = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FileExts\$ext\OpenWithList"
-if (Test-Path $listKey) {
-  $props = Get-ItemProperty -Path $listKey
-  $mapping = @{}
-  foreach ($p in $props.PSObject.Properties) {
-    if ($p.Name -like 'PS*' -or $p.Name -eq 'MRUList') { continue }
-    $mapping[$p.Name] = [string]$p.Value
-  }
-  $ordered = @()
-  if ($props.MRUList) {
-    foreach ($ch in ([string]$props.MRUList).ToCharArray()) {
-      $k = [string]$ch
-      if ($mapping.ContainsKey($k)) { $ordered += $mapping[$k] }
-    }
-  }
-  foreach ($v in $mapping.Values) {
-    if ($ordered -notcontains $v) { $ordered += $v }
-  }
-  foreach ($exeName in $ordered) {
-    if ([string]::IsNullOrWhiteSpace($exeName)) { continue }
-    $command = $null
-    foreach ($root in @('Registry::HKEY_CLASSES_ROOT\Applications', 'HKCU:\SOFTWARE\Classes\Applications', 'HKLM:\SOFTWARE\Classes\Applications')) {
-      $value = (Get-ItemProperty -Path "$root\$exeName\shell\open\command" -ErrorAction SilentlyContinue).'(default)'
-      if ($null -ne $value -and ([string]$value).Trim() -ne '') { $command = [string]$value; break }
-    }
-    if ($null -eq $command) {
-      foreach ($root in @('Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths', 'Registry::HKEY_CURRENT_USER\SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths')) {
-        $appPath = (Get-ItemProperty -Path "$root\$exeName" -ErrorAction SilentlyContinue).'(default)'
-        if ($null -ne $appPath -and ([string]$appPath).Trim() -ne '') { $command = '"' + [string]$appPath + '" "%1"'; break }
+$listSub = "SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FileExts\$ext\OpenWithList"
+$mapping = [ordered]@{}
+$mru = $null
+try {
+  $key = $HKCU.OpenSubKey($listSub)
+  if ($null -ne $key) {
+    try {
+      foreach ($name in $key.GetValueNames()) {
+        if ($name -eq 'MRUList') { $mru = [string]$key.GetValue($name); continue }
+        $mapping[$name] = [string]$key.GetValue($name)
       }
-    }
-    Add-Handler -Command $command -Source 'openwith' -ProgId $exeName -FallbackName $exeName
+    } finally { $key.Close() }
   }
+} catch { }
+
+$ordered = @()
+if ($mru) {
+  foreach ($ch in $mru.ToCharArray()) {
+    $k = [string]$ch
+    if ($mapping.Contains($k)) { $ordered += $mapping[$k] }
+  }
+}
+foreach ($v in $mapping.Values) { if ($ordered -notcontains $v) { $ordered += $v } }
+
+foreach ($exeName in $ordered) {
+  if ([string]::IsNullOrWhiteSpace($exeName)) { continue }
+  $command = Get-DefaultValue $HKCR "Applications\$exeName\shell\open\command"
+  if ([string]::IsNullOrWhiteSpace($command)) {
+    $appPath = Get-DefaultValue $HKLM "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\$exeName"
+    if ([string]::IsNullOrWhiteSpace($appPath)) {
+      $appPath = Get-DefaultValue $HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\$exeName"
+    }
+    if (-not [string]::IsNullOrWhiteSpace($appPath)) { $command = '"' + $appPath + '" "%1"' }
+  }
+  Add-Handler $command 'openwith' $exeName
 }
 
 [pscustomobject]@{

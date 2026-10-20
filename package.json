@@ -1,6 +1,6 @@
 {
     "name":  "dsh-better-right-click",
-    "version": "0.6.0",
+    "version": "0.6.5",
     "description":  "Better Right-Click — right-click menu on file references in the DSH transcript: copy the absolute path, reveal the file in Explorer, or open it with any app registered for that file type. Bilingual (follows the DSH locale).",
     "license":  "MIT",
     "publishConfig":  {
