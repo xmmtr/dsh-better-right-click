@@ -59,6 +59,11 @@ DSH（DeepSeek Harness）Web 会话正文里，对**文件引用**点右键，�
 - 0.1.6：右键菜单列出本机注册的所有能打开该扩展名的程序（默认 ProgID / OpenWithProgids / OpenWithList 按 MRUList 排序），失效项自动跳过，点谁用谁打开；宿主新增 `POST /file-menu/handlers` 与 `POST /file-menu/open-with`（只接受枚举结果里的 exe）。
 - 0.1.3：直接拼 base 找不到时，在工作区里按路径后缀做有界搜索（跳过 node_modules/.git/隐藏目录，20k 条目、12 层上限、10s 缓存），同名多个时取**最近修改**的那个；404 回包带 `attempted` 与 `base`，客户端提示里直接显示尝试过的绝对路径；新增 `GET /file-menu/last` 供自查最近 20 次请求。
 - 0.1.9：菜单与提示文案跟随 DSH 界面语言（`ctx.locale` → `<html lang>` → `navigator.language`），中文/英文自动切换，未识别语言回退英文。
+- 0.6.0：菜单项可在设置里用 ↑ / ↓ 调整先后顺序，保存后按该顺序显示（设置对话框同样跟随主题）。
+- 0.5.1：补齐「默认打开方式（按扩展名固定）」相关的 5 条文案（pinSection/pinCurrent/pinNone/pinnedOpen/otherApp，缺键会渲染成字面量 undefined）；固定程序项改为独立渲染（不再依赖「打开方式」开关是否勾选）；保存后清 handler 缓存。
+- 0.5.0：菜单配色改为跟随 DSH 主题——优先用 `--dsw-*` 设计令牌，令牌缺失时按 `html` 的 `color-scheme` 加 `.dsh-fm-light` / `.dsh-fm-dark` 兜底底色；主题切换时用 MutationObserver 实时同步（菜单开着也会变色）；设置对话框同步。
+- 0.4.0：打开方式可**锁定**——右键菜单里先出现「用 X 打开（已锁定）」，其余应用仍在下面备选；末尾新增「其他程序…」调起 Windows 原生选择框（选过的应用 Windows 会记住，下次自动进列表）。锁定按**扩展名**存（`.md` → MarkText、`.txt` → 记事本），只影响本插件菜单，不改系统默认程序。
+- 0.3.0：菜单可配置——右键菜单底部新增「菜单设置…」，勾选要显示的项（复制绝对路径 / 复制相对路径 / 用默认应用打开 / 打开方式列表 / 在资源管理器中显示），默认全开；文件管理器三档 `auto | explorer | custom`，保存即生效（写 `~/.dsh/better-right-click/config.json`）。新增 `GET/POST /file-menu/config`。
 - 0.2.0：改名 **Better Right-Click**，npm 包名/仓库/客户端模块 id 全部改为 `dsh-better-right-click`（旧名 `@xmmtr/dsh-file-menu` 已弃用，功能相同）。
 - 错误路径：缺文件 → `404 {"ok":false,"error":"not-found"}`；`Content-Type` 非 JSON → `415`；外部 Origin → `403`；`GET /file-menu/reveal` → `405`。
 - 客户端（Edge headless + CDP，真实页面、真实 bundle）：菜单三项文案正确、复制得到 `C:\Users\86137\Desktop\workme\AGENTS.md`、`Esc`/点击外部关闭、正文空白与输入框不拦截。
@@ -74,6 +79,40 @@ DSH（DeepSeek Harness）Web 会话正文里，对**文件引用**点右键，�
 - 只做定位与打开：**不读文件内容、不列举目录、不执行任意命令**。
 - 宿主端 POST 路由要求同源（`Origin`/`Referer` 为本机回环，或 `Sec-Fetch-Site: same-origin`），其他来源 403。
 - 中文菜单文案在 `lib/labels.js` 的 `LABELS`，英文待补（`TODO.md`）。
+
+## 菜单配置
+
+两种方式,二选一:
+
+1. **界面里改**(推荐):右键任意文件引用 →「菜单设置…」→ 勾选要显示的项、选文件管理器 → 保存,立即生效,不用重启。配置落在 `~/.dsh/better-right-click/config.json`。
+2. **配置文件预置**(适合团队统一):
+
+```yaml
+# cordis.patch.yml
+- id: file-menu
+  name: dsh-better-right-click
+  config:
+    items: [copy-absolute, copy-relative, reveal, open-default, open-with]
+    fileManager:
+      mode: auto          # auto | explorer | custom
+      command: ''         # mode=custom 时生效,%1 代表文件路径
+```
+
+`items` 可选值:`copy-absolute`、`copy-relative`、`reveal`、`open-default`、`open-with`。非法项会被忽略,`items` 为空时回落全开。
+
+非默认资源管理器:`mode: auto` 会自动读注册表(`HKCU/HKLM\Software\Classes\Folder\shell\open\command`),当你装了 Directory Opus / XYplorer / Total Commander / Files 等接管了文件夹打开的程序时,菜单会多一项「用 XXX 打开所在位置」。
+
+### 锁定某个应用（0.4.0）
+
+右键 → 「菜单设置…」→「锁定打开方式」：当前文件类型会列出所有能打开它的应用，选一个保存，以后这个类型的菜单顶部就固定是「用 X 打开（已锁定）」，其余应用仍可临时改选。
+
+- 锁定按扩展名生效，只影响本插件菜单，**不会**改 Windows 的双击默认程序（改系统默认要 Windows 设置页手动点，微软不允许程序静默改）。
+- 想换成没进列表的程序：右键 →「其他程序…」→ 在系统对话框里选，Windows 会记住它，下次自动出现在列表里。
+- 锁定存在 `~/.dsh/better-right-click/config.json` 的 `pins` 字段，可直接编辑：
+
+```json
+{ "pins": { ".md": "C:\\Program Files\\MarkText\\marktext.exe" } }
+```
 
 ## 原理
 

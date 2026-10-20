@@ -71,3 +71,16 @@
 ## T-12 跨工作区搜索（0.1.3 未覆盖）
 
 0.1.3 的后缀搜索只在**当前活动会话的工作区**里做。若正文链接指向别的工作区（如 C:\\Users\\86137\\Desktop\\project-099-水务），仍会 404。后续可从 ~/.dsh/sessions/*/session-*/ 收集各工作区的 cwd 一起搜。
+
+## T-13 设置页不渲染第三方插件的表单（0.3.0 已定案）
+
+`ctx.settings.register(ns, zodSchema)` 只是把 schema 交给 host，DSH 的设置页**不会**为第三方插件渲染通用表单（`dsh-auto-collapse` 只注册 statusText，界面上看不到）。因此 0.3.0 的配置入口做在**右键菜单自己的「菜单设置…」对话框**里，配置存独立 JSON（`~/.dsh/better-right-click/config.json`），不经过 DSH 设置页。后续若 DSH 开放插件设置页渲染，再接过去。
+## T-14 0.4.0 的取舍
+
+- 锁定只作用于插件菜单：Windows 的默认程序（UserChoice）有哈希保护，程序无法静默改，只能弹设置页。已在 README 写清。
+- 「其他程序…」不自己扫开始菜单：走系统 `OpenAs_RunDLL`，选完 Windows 会把应用写进 `OpenWithList`，下次自然出现在我们的列表里——比自建扫描更准也更省。
+- pins 以扩展名为键，同一扩展名全用户共用一个应用；跨类型共享（如 md/txt 同组）未做，等有人要再说。
+
+## T-13 拖拽排序（未做）
+
+0.6.0 用 ↑ / ↓ 按钮排序。若要做鼠标拖拽，需要 pointerdown/move/up 自己实现视觉拖影（HTML5 draggable 在 Electron 里可用，但和右键菜单的点击判定容易打架）。
