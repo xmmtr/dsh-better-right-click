@@ -14,7 +14,9 @@ DSH（DeepSeek Harness）Web 会话正文里，对**文件引用**点右键，�
 右键正文空白 / 输入框 / 代码块 / 按钮 → **不拦截**，原生菜单照常出现。
 
 适配版本：**DSH 0.2.1-rc.2**（`engines.dsh`：`>=0.2.1-rc.2 <0.3.0`）。
-当前完整支持 **Windows**；macOS / Linux 走同一套分支，未在真机验证。
+**平台要求：Windows 10 / 11**（需要系统自带 PowerShell 5.1）。
+
+macOS / Linux **不支持**：资源管理器定位、已注册程序列表、文件管理器检测、选择程序对话框全部依赖 Windows 的 `explorer.exe` / PowerShell 脚本，在这些平台上只有「复制绝对路径 / 复制相对路径」可用。
 
 ## 安装（标准方式：`dsh plugin add`）
 
@@ -59,7 +61,7 @@ DSH（DeepSeek Harness）Web 会话正文里，对**文件引用**点右键，�
 - 0.1.6：右键菜单列出本机注册的所有能打开该扩展名的程序（默认 ProgID / OpenWithProgids / OpenWithList 按 MRUList 排序），失效项自动跳过，点谁用谁打开；宿主新增 `POST /file-menu/handlers` 与 `POST /file-menu/open-with`（只接受枚举结果里的 exe）。
 - 0.1.3：直接拼 base 找不到时，在工作区里按路径后缀做有界搜索（跳过 node_modules/.git/隐藏目录，20k 条目、12 层上限、10s 缓存），同名多个时取**最近修改**的那个；404 回包带 `attempted` 与 `base`，客户端提示里直接显示尝试过的绝对路径；新增 `GET /file-menu/last` 供自查最近 20 次请求。
 - 0.1.9：菜单与提示文案跟随 DSH 界面语言（`ctx.locale` → `<html lang>` → `navigator.language`），中文/英文自动切换，未识别语言回退英文。
-- 0.6.5：修 0.6.4 的回归——`setLocked()` 会顺手删掉 `data-ext`，导致确认扩展名后按「＋」什么都没发生（读不到扩展名就早退了）。
+- 0.6.6：修 0.6.4 的回归——`setLocked()` 会顺手删掉 `data-ext`，导致确认扩展名后按「＋」什么都没发生（读不到扩展名就早退了）。
 - 0.6.4：设置里新增「浏览其他程序…」——弹 Windows 原生文件选择框，可指定任何 .exe（便携版/免安装软件也能用），选中后即可加为固定规则；注册表一个程序都没有时不再直接卡死，仍可走这个入口。
 - 0.6.3：枚举打开方式的脚本改用 .NET 注册表 API（`Registry.ClassesRoot` 已合并 HKCU/HKLM，不再逐根试探），.pdf 从 10.8 s 降到 0.4 s；设置里的扩展名输入加「✓ 确认」按钮，确认后才锁输入框并去读可用程序；固定面板宽度，避免加载选项时被撑宽。
 - 0.6.2：设置对话框与右键菜单加过渡动画（淡入/弹出/行重排 FLIP，尊重 prefers-reduced-motion）；「默认打开方式」改成随时可编辑的固定规则列表（新增扩展名 → 选程序 → 保存），不再依赖先右键过一次文件。
@@ -129,7 +131,8 @@ DSH（DeepSeek Harness）Web 会话正文里，对**文件引用**点右键，�
 
 DSH web plugin adding a three-item right-click menu (**Copy absolute path** / **Reveal in Explorer** / **Open with default app**) for file references in the conversation transcript: markdown file links, `@file` mentions and tool-row file cards. Right-clicking blank text, inputs, code blocks or buttons keeps the native menu.
 
-- Target build: DSH `0.2.1-rc.2` (`>=0.2.1-rc.2 <0.3.0`), fully verified on Windows only.
+- Platform: **Windows 10 / 11 only** (uses the built-in PowerShell 5.1). macOS and Linux are not supported: Explorer reveal, the registered-apps list, file-manager detection and the picker dialog all depend on `explorer.exe` / PowerShell scripts; only the two copy actions would work there.
+- Target build: DSH `0.2.1-rc.2` (`>=0.2.1-rc.2 <0.3.0`). The package declares `"os": ["win32"]`, so npm refuses to install it on other platforms.
 - Install: `dsh plugin --profile <profile> add <name-or-tgz>` (the package declares `dsh.bundle.patch` = its `cordis.patch.yml`, so the plugin manager installs and removes it like any other bundle), restart DSH.
 - Host routes: `GET /file-menu/open`, `GET /file-menu/status`, `POST /file-menu/reveal`, `POST /file-menu/open-external`. Same-origin (loopback) only, JSON errors, no file content read, no shell string concatenation.
 - Client: classic-script bundle, capture-phase `contextmenu`, DOM overlay following DSH theme variables, `Esc`/outside click/scroll/blur close it, clean dispose.

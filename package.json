@@ -1,60 +1,61 @@
 {
-    "name":  "dsh-better-right-click",
-    "version": "0.6.5",
-    "description":  "Better Right-Click — right-click menu on file references in the DSH transcript: copy the absolute path, reveal the file in Explorer, or open it with any app registered for that file type. Bilingual (follows the DSH locale).",
-    "license":  "MIT",
-    "publishConfig":  {
-                          "access":  "public"
-                      },
-    "author":  "xmmtr",
-    "type":  "module",
-    "main":  "lib/index.js",
-    "exports":  {
-                    ".":  "./lib/index.js",
-                    "./client":  "./lib/client.js",
-                    "./labels":  "./lib/labels.js",
-                    "./package.json":  "./package.json"
-                },
-    "files":  [
-                  "scripts",
-                  "lib",
-                  "cordis.patch.yml",
-                  "README.md",
-                  "TODO.md",
-                  "LICENSE"
-              ],
-    "keywords":  [
-                     "dsh-plugin",
-                     "dsh",
-                     "deepseek-harness",
-                     "file-menu",
-                     "context-menu",
-                     "open-with",
-                     "explorer",
-                     "better-right-click"
-                 ],
-    "engines":  {
-                    "node":  "\u003e=20.18.1",
-                    "dsh":  "\u003e=0.2.1-rc.2 \u003c0.3.0"
-                },
-    "dsh":  {
-                "manifestVersion":  1,
-                "bundle":  {
-                               "patch":  "./cordis.patch.yml"
-                           },
-                "client":  {
-                               "platform":  "web",
-                               "inject":  [
-
-                                          ]
-                           }
-            },
-    "repository":  {
-                       "type":  "git",
-                       "url":  "git+https://github.com/xmmtr/dsh-better-right-click.git"
-                   },
-    "homepage":  "https://github.com/xmmtr/dsh-better-right-click#readme",
-    "bugs":  {
-                 "url":  "https://github.com/xmmtr/dsh-better-right-click/issues"
-             }
+  "name": "dsh-better-right-click",
+  "version": "0.6.6",
+  "description": "Better Right-Click — right-click menu on file references in the DSH transcript: copy the absolute path, reveal the file in Explorer, or open it with any app registered for that file type. Bilingual (follows the DSH locale). Windows only.",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "author": "xmmtr",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./labels": "./lib/labels.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "scripts",
+    "lib",
+    "cordis.patch.yml",
+    "README.md",
+    "TODO.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "dsh-plugin",
+    "dsh",
+    "deepseek-harness",
+    "file-menu",
+    "context-menu",
+    "open-with",
+    "explorer",
+    "better-right-click"
+  ],
+  "engines": {
+    "node": ">=20.18.1",
+    "dsh": ">=0.2.1-rc.2 <0.3.0"
+  },
+  "dsh": {
+    "manifestVersion": 1,
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": []
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xmmtr/dsh-better-right-click.git"
+  },
+  "homepage": "https://github.com/xmmtr/dsh-better-right-click#readme",
+  "bugs": {
+    "url": "https://github.com/xmmtr/dsh-better-right-click/issues"
+  },
+  "os": [
+    "win32"
+  ]
 }
